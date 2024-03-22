@@ -1,36 +1,18 @@
-from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 from datasets import load_dataset
-import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 
-# Load the tokenizer and dataset
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+# Load the IMDb dataset
 dataset = load_dataset('imdb')
+
+# Load the tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+model = AutoModelForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)  # 2 labels for binary classification
 
 # Preprocess the data
 def tokenize_function(examples):
     return tokenizer(examples['text'], padding='max_length', truncation=True, max_length=256)
 
 tokenized_datasets = dataset.map(tokenize_function, batched=True)
-
-# Prepare dataset for PyTorch
-class IMDBDataset(torch.utils.data.Dataset):
-    def __init__(self, inputs, labels):
-        self.inputs = inputs
-        self.labels = labels
-
-    def __len__(self):
-        return len(self.inputs['input_ids'])
-
-    def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx]) for key, val in self.inputs.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
-
-train_dataset = IMDBDataset(tokenized_datasets['train'], dataset['train']['label'])
-test_dataset = IMDBDataset(tokenized_datasets['test'], dataset['test']['label'])
-
-# Load the BERT model
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased')
 
 # Define training arguments
 training_args = TrainingArguments(
@@ -48,28 +30,14 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=test_dataset
+    train_dataset=tokenized_datasets['train'],
+    eval_dataset=tokenized_datasets['test']
 )
 
 # Train the model
 trainer.train()
 
 # Save the model
-model_path = "./bert-imdb"
+model_path = "./distilbert-imdb"
 model.save_pretrained(model_path)
 tokenizer.save_pretrained(model_path)
-
-# Load the trained model
-model = BertForSequenceClassification.from_pretrained(model_path)
-tokenizer = BertTokenizer.from_pretrained(model_path)
-
-# Prediction function
-def predict(text):
-    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=256)
-    outputs = model(**inputs)
-    predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
-    return predictions.detach().numpy()
-
-# Test prediction
-print(predict("This movie is fantastic!"))
