@@ -2,5 +2,5 @@
 
 There are two options to run GPU training on servers:
 
-1. by reserving the GPU on gpu.ux.uis.no
+1. by reserving the GPU on [UiS GPU portal](https://gpu.ux.uis.no).
 2. Using [Slurm](slurm)
