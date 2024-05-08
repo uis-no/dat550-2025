@@ -12,8 +12,8 @@ train_dataset = dataset['train'].shuffle(seed=42).select(range(100))
 print(train_dataset.shape)
 test_dataset = dataset['test']
 # Load the tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained('FacebookAI/xlm-roberta-base')
-model = AutoModelForSequenceClassification.from_pretrained('FacebookAI/xlm-roberta-base', num_labels=2)  # 2 labels for binary classification
+tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-base')
+model = AutoModelForSequenceClassification.from_pretrained('xlm-roberta-base', num_labels=2)  # 2 labels for binary classification
 
 # Preprocess the data
 def tokenize_function(examples):
