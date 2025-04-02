@@ -1,0 +1,17 @@
+no such environment file: /opt/uis/uenv/cuda-12.4.0
+A GPU-accelerated library of primitives for deep neural networks, https://developer.nvidia.com/cudnn
+prepending to __UENV: cudnn-12.x-8.8.0
+prepending to LD_LIBRARY_PATH: /usr/local/_cuda/cudnn-12.x-8.8.0/lib
+
+
+
+2.1.2+cu121 0.16.2+cu121
+Using device: cuda
+Loading pretrained ResNet-18...
+/home/ansatt/vsetty/.local/lib/python3.11/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/ansatt/vsetty/.local/lib/python3.11/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Downloading: "https://download.pytorch.org/models/resnet18-f37072fd.pth" to /home/ansatt/vsetty/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth
+  0%|          | 0.00/44.7M [00:00<?, ?B/s]  5%|▌         | 2.26M/44.7M [00:00<00:01, 23.7MB/s] 46%|████▋     | 20.8M/44.7M [00:00<00:00, 124MB/s]  92%|█████████▏| 41.0M/44.7M [00:00<00:00, 164MB/s]100%|██████████| 44.7M/44.7M [00:00<00:00, 146MB/s]
+/var/spool/slurmd/job403587/slurm_script: line 16: 2485285 Segmentation fault      CUDA_LAUNCH_BLOCKING=1 python -u cnn_resnet.py
