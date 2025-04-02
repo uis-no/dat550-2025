@@ -41,7 +41,9 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 def count_parameters(model):
     # Implement a function to count the total number of trainable parameters in the model
-    pass
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    print(model_parameters)
+    return sum([p.numel() for p in model_parameters])
 
 # Assuming model is an instance of SimpleCNN
 model = SimpleCNN()

@@ -4,43 +4,58 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torchvision import models
+from torchvision.models import VGG16_Weights
+from torch.utils.data import Subset
 
-# 1. Load and normalize CIFAR-10
+# Device setup (safe for SLURM)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
+# 1. Data transforms
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),  # Resize to match VGG-16 input size
+    transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=32,
-                                          shuffle=True)
+# 2. Load CIFAR-10 but only a subset
+trainset_full = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                             download=True, transform=transform)
+testset_full = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                            download=True, transform=transform)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=32,
-                                         shuffle=False)
+# Use smaller subsets for training/testing (e.g., 1000 train, 200 test)
+train_subset = Subset(trainset_full, range(1000))
+test_subset = Subset(testset_full, range(200))
 
-# 2. Load VGG-16 and modify classifier
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+trainloader = torch.utils.data.DataLoader(train_subset, batch_size=8, shuffle=True, num_workers=0)
+testloader = torch.utils.data.DataLoader(test_subset, batch_size=8, shuffle=False, num_workers=0)
 
-vgg16 = models.vgg16(pretrained=True)  # Use pretrained ImageNet weights
+# 3. Load VGG-16 safely
+try:
+    print("Trying to load pretrained VGG-16...")
+    vgg16 = models.vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
+except Exception as e:
+    print(f"⚠️ Could not load pretrained weights: {e}")
+    print("Falling back to untrained VGG-16.")
+    vgg16 = models.vgg16(weights=None)
+
+# Freeze features to reduce training time/memory
 for param in vgg16.features.parameters():
-    param.requires_grad = False  # Freeze convolutional base
+    param.requires_grad = False
 
-# Replace classifier head to fit CIFAR-10 (10 classes)
+# Modify classifier for CIFAR-10
 vgg16.classifier[6] = nn.Linear(4096, 10)
 vgg16 = vgg16.to(device)
 
-# 3. Set up training
+# 4. Set up training
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(vgg16.classifier.parameters(), lr=0.001)
 
-# 4. Training loop
-for epoch in range(5):  # Train for 5 epochs
-    running_loss = 0.0
+# 5. Training loop
+for epoch in range(3):  # fewer epochs for quick test
     vgg16.train()
+    running_loss = 0.0
     for images, labels in trainloader:
         images, labels = images.to(device), labels.to(device)
 
@@ -51,9 +66,10 @@ for epoch in range(5):  # Train for 5 epochs
         optimizer.step()
 
         running_loss += loss.item()
-    print(f"Epoch {epoch+1}, Loss: {running_loss/len(trainloader):.4f}")
 
-# 5. Evaluation
+    print(f"Epoch {epoch+1}, Loss: {running_loss / len(trainloader):.4f}")
+
+# 6. Evaluation
 vgg16.eval()
 correct = 0
 total = 0
@@ -65,4 +81,4 @@ with torch.no_grad():
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
-print(f"Test Accuracy: {100 * correct / total:.2f}%")
+print(f"Test Accuracy on 200 samples: {100 * correct / total:.2f}%")

@@ -13,13 +13,14 @@ import os
 from torch import Tensor
 
 CHECKWORTHY_PROMPT = """Given a claim your task is to predict if it is check-worthy or not.{claim}"""
+SENTIMENT_PROMPT = """Given a statement your task is to predict if it is positive, negative or neutral. Generate response as a JSON with key label and value positive, negative or neutral {claim}"""
 
 class Ollama:
     """A class for generating questions and interacting with the Ollama API."""
 
     def __init__(self, config_path: str = "model.yaml"):
         """Initializes the Ollama client and loads necessary configurations."""
-        self._ollama_client = Client(timeout=20)
+        self._ollama_client = Client(host="https://ollama.ux.uis.no", timeout=20)
         self._config_path = config_path
         self._config = self._load_config()
         self._stream = self._config.get("stream", False)
@@ -40,6 +41,7 @@ class Ollama:
             prompt=prompt,
             options=self._llm_options,
             stream=self._stream,
+            # format="json",
         )
         return response.get("response", "").strip()  # type: ignore
 
@@ -66,8 +68,10 @@ class Ollama:
         Returns:
             An Options object with the LLM configuration.
         """
-        return Options(self._config.get("options", {}))
+        return Options(**self._config.get("options", {}))
 
 if __name__ == "__main__":
     ollama = Ollama()
-    print(ollama.generate(CHECKWORTHY_PROMPT.format(claim="The earth is flat.")))
+    # print(ollama.generate(CHECKWORTHY_PROMPT.format(claim="The earth is flat.")))
+    # print(ollama.generate(SENTIMENT_PROMPT.format(claim="This movie is sickly good.")))
+    print(ollama.generate("What do know about Stavanger?"))

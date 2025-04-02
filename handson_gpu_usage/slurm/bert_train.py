@@ -4,8 +4,10 @@ from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import numpy as np
 import wandb
 
+print("Starting the script...")
 # Load the IMDb dataset
 dataset = load_dataset('imdb')
+
 wandb.init(project="imdb_classification", entity="vinays")
 print(dataset)
 train_dataset = dataset['train'].shuffle(seed=42)
@@ -20,8 +22,8 @@ def tokenize_function(examples):
     return tokenizer(examples['text'], padding='max_length', truncation=True, max_length=256)
 
 
-tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
-tokenized_test_dataset = test_dataset.map(tokenize_function, batched=True)
+tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True).select(range(1000))  # Select first 100 samples for training
+tokenized_test_dataset = test_dataset.map(tokenize_function, batched=True).select(range(100)) 
 
 print(tokenized_train_dataset[0])
 
@@ -38,6 +40,7 @@ def compute_metrics(p: EvalPrediction):
 training_args = TrainingArguments(
     output_dir='./results',
     num_train_epochs=10,
+    evaluation_strategy="epoch",
     per_device_train_batch_size=32,
     per_device_eval_batch_size=32,
     warmup_steps=10,
